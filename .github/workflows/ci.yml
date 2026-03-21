@@ -111,3 +111,62 @@ jobs:
 
       - name: Vérification que l'image est bien construite
         run: docker images | grep foodmarket-php
+
+  # ── Job 4 : Analyse SonarQube ──────────────────────────────
+  # Scan de qualité et sécurité du code PHP
+  # Prérequis secrets : SONAR_TOKEN, SONAR_HOST_URL
+  sonarqube:
+    name: Analyse SonarQube
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout du code (historique complet pour SonarQube)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Installation de PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: intl, mbstring, sqlite3, pdo_sqlite
+          coverage: xdebug
+
+      - name: Installation des dépendances
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Génération du rapport de couverture pour SonarQube
+        run: |
+          cp .env.example .env
+          vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
+        env:
+          CI_ENVIRONMENT: testing
+
+      - name: Scan SonarQube
+        uses: SonarSource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  # ── Job 5 : Audit sécurité Composer ────────────────────────
+  # Vérifie les vulnérabilités connues dans les dépendances
+  security:
+    name: Audit Sécurité
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installation de PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
+
+      - name: Installation des dépendances
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Audit des vulnérabilités Composer
+        run: composer audit

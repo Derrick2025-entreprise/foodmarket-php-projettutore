@@ -1,0 +1,75 @@
+# ─────────────────────────────────────────────────────────────
+# k8s/db-deployment.yml — Déploiement MySQL dans Kubernetes
+#
+# Crée un pod MySQL avec stockage persistant (PersistentVolume)
+# pour que les données survivent aux redémarrages des pods.
+#
+# Usage :
+#   kubectl apply -f k8s/db-deployment.yml
+# ─────────────────────────────────────────────────────────────
+
+# ── Volume persistant pour MySQL ─────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce   # Un seul pod peut écrire à la fois
+  resources:
+    requests:
+      storage: 5Gi    # 5 Go de stockage pour la base de données
+
+---
+
+# ── Déploiement MySQL ─────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foodmarket-db
+  labels:
+    app: foodmarket-db
+spec:
+  replicas: 1   # MySQL : 1 seul replica (pas de clustering ici)
+  selector:
+    matchLabels:
+      app: foodmarket-db
+  template:
+    metadata:
+      labels:
+        app: foodmarket-db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "rootpass"
+            - name: MYSQL_DATABASE
+              value: "foodmarket"
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: foodmarket-secrets
+                  key: db-username
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: foodmarket-secrets
+                  key: db-password
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql   # Données MySQL persistées ici
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc

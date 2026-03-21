@@ -1,0 +1,45 @@
+# ─────────────────────────────────────────────────────────────
+# k8s/hpa.yml — HorizontalPodAutoscaler FoodMarket
+#
+# Auto-scaling automatique basé sur l'utilisation CPU :
+#   - Min : 2 pods
+#   - Max : 10 pods
+#   - Seuil : scale up si CPU > 70%
+#
+# Prérequis : metrics-server installé dans le cluster
+#   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+#
+# Usage :
+#   kubectl apply -f k8s/hpa.yml
+# ─────────────────────────────────────────────────────────────
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: foodmarket-hpa
+spec:
+  # Cible le Deployment foodmarket-app
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: foodmarket-app
+
+  minReplicas: 2   # Toujours au moins 2 pods (haute disponibilité)
+  maxReplicas: 10  # Maximum 10 pods en cas de forte charge
+
+  metrics:
+    # Scale up si CPU moyen dépasse 70%
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+    # Scale up si mémoire moyenne dépasse 80%
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

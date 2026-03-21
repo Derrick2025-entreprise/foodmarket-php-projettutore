@@ -15,6 +15,9 @@ $routes->get('/', 'Home::index');
 // ── Endpoint de santé (utilisé par Docker et le CI/CD) ──────
 $routes->get('/health', 'Home::health');
 
+// ── Endpoint métriques Prometheus ───────────────────────────
+$routes->get('/metrics', 'Home::metrics');
+
 // ── API Produits (RESTful) ───────────────────────────────────
 $routes->get('products',          'ProductController::index');
 $routes->get('products/(:num)',   'ProductController::show/$1');

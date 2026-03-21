@@ -92,6 +92,85 @@ services:
       - foodmarket-net
     restart: unless-stopped
 
+  # ── Node Exporter : métriques CPU, RAM, réseau du host ─────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: foodmarket-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Elasticsearch : stockage des logs ─────────────────────
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: foodmarket-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node          # Mode nœud unique (pas de cluster)
+      - xpack.security.enabled=false        # Désactiver la sécurité pour le dev
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m     # Limiter la mémoire JVM à 512 Mo
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Logstash : traitement et parsing des logs ──────────────
+  logstash:
+    image: logstash:8.12.0
+    container_name: foodmarket-logstash
+    ports:
+      - "5044:5044"   # Port Beats (Filebeat → Logstash)
+      - "5000:5000"   # Port TCP (logs directs)
+      - "9600:9600"   # API HTTP Logstash
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline
+      - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
+    depends_on:
+      - elasticsearch
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Kibana : interface web pour visualiser les logs ────────
+  kibana:
+    image: kibana:8.12.0
+    container_name: foodmarket-kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Filebeat : collecte des logs de l'application ──────────
+  filebeat:
+    image: elastic/filebeat:8.12.0
+    container_name: foodmarket-filebeat
+    user: root    # Nécessaire pour lire les logs système
+    volumes:
+      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./writable/logs:/var/www/html/writable/logs:ro
+    depends_on:
+      - logstash
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
   # ── Grafana : visualisation des métriques ──────────────────
   grafana:
     image: grafana/grafana:latest
@@ -116,3 +195,4 @@ networks:
 volumes:
   db-data:
   grafana-data:
+  elasticsearch-data:

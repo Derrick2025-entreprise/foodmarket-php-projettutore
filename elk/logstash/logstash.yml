@@ -1,0 +1,16 @@
+# ─────────────────────────────────────────────────────────────
+# logstash.yml — Configuration générale de Logstash
+# ─────────────────────────────────────────────────────────────
+
+# Adresse d'écoute de l'API HTTP de Logstash
+http.host: "0.0.0.0"
+http.port: 9600
+
+# Chemin vers le pipeline de traitement
+path.config: /usr/share/logstash/pipeline
+
+# Niveau de log (info, debug, warn, error)
+log.level: info
+
+# Désactiver le monitoring X-Pack (nécessite une licence)
+xpack.monitoring.enabled: false

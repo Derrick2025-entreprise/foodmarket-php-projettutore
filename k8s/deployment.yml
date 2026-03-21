@@ -1,0 +1,90 @@
+# ─────────────────────────────────────────────────────────────
+# k8s/deployment.yml — Déploiement Kubernetes FoodMarket
+#
+# Crée 2 replicas de l'application PHP avec :
+#   - Rolling update (mise à jour sans interruption)
+#   - Health checks (liveness + readiness)
+#   - Variables d'environnement pour la base de données
+#
+# Usage :
+#   kubectl apply -f k8s/deployment.yml
+# ─────────────────────────────────────────────────────────────
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: foodmarket-app
+  labels:
+    app: foodmarket
+    tier: backend
+spec:
+  # Nombre de replicas (instances) de l'application
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: foodmarket
+
+  # Stratégie de déploiement Rolling Update
+  # → met à jour les pods un par un sans downtime
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # 1 pod supplémentaire pendant la mise à jour
+      maxUnavailable: 0  # Aucun pod indisponible pendant la mise à jour
+
+  template:
+    metadata:
+      labels:
+        app: foodmarket
+    spec:
+      containers:
+        - name: foodmarket-app
+          image: derrickdev/foodmarket-php:latest
+          ports:
+            - containerPort: 80
+
+          # Variables d'environnement pour la connexion à la base de données
+          env:
+            - name: CI_ENVIRONMENT
+              value: "production"
+            - name: DB_HOSTNAME
+              value: "foodmarket-db-service"
+            - name: DB_DATABASE
+              value: "foodmarket"
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: foodmarket-secrets
+                  key: db-username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: foodmarket-secrets
+                  key: db-password
+
+          # Liveness probe : redémarre le pod si l'app ne répond plus
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 3
+
+          # Readiness probe : n'envoie du trafic que si l'app est prête
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+
+          # Limites de ressources
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
