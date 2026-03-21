@@ -1,0 +1,118 @@
+# ─────────────────────────────────────────────────────────────
+# docker-compose.yml — FoodMarket PHP
+#
+# Services :
+#   app        → Application CodeIgniter 4 (port 8080)
+#   db         → MySQL 8 (port 3306)
+#   phpmyadmin → Interface web MySQL (port 8081)
+#   prometheus → Collecte métriques (port 9090)
+#   grafana    → Dashboard métriques (port 3001)
+#
+# Usage :
+#   docker-compose up -d          → Démarrer tout
+#   docker-compose down           → Arrêter tout
+#   docker-compose logs -f app    → Voir les logs de l'app
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Application PHP CodeIgniter 4 ──────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: foodmarket-app
+    ports:
+      - "8080:80"
+    environment:
+      - CI_ENVIRONMENT=development
+      - DB_HOSTNAME=db
+      - DB_DATABASE=foodmarket
+      - DB_USERNAME=fooduser
+      - DB_PASSWORD=foodpass
+    volumes:
+      # Monte le code source en live (utile en développement)
+      - .:/var/www/html
+      - /var/www/html/vendor   # Exclut vendor du montage
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Base de données MySQL 8 ─────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: foodmarket-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: foodmarket
+      MYSQL_USER: fooduser
+      MYSQL_PASSWORD: foodpass
+    volumes:
+      - db-data:/var/lib/mysql
+    # Healthcheck : attend que MySQL soit prêt avant de démarrer l'app
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fooduser", "-pfoodpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── phpMyAdmin : interface web pour MySQL ───────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: foodmarket-phpmyadmin
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: fooduser
+      PMA_PASSWORD: foodpass
+    depends_on:
+      - db
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Prometheus : collecte des métriques ────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: foodmarket-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Grafana : visualisation des métriques ──────────────────
+  grafana:
+    image: grafana/grafana:latest
+    container_name: foodmarket-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+networks:
+  foodmarket-net:
+    driver: bridge
+
+volumes:
+  db-data:
+  grafana-data:

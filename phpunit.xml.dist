@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    phpunit.xml.dist — Configuration PHPUnit pour FoodMarket
+    - Utilise SQLite en mémoire pour les tests (pas besoin de MySQL)
+    - Génère un rapport de couverture de code
+-->
+<phpunit
+    bootstrap="vendor/codeigniter4/framework/system/Test/bootstrap.php"
+    backupGlobals="false"
+    colors="true"
+    convertErrorsToExceptions="true"
+    convertNoticesToExceptions="true"
+    convertWarningsToExceptions="true"
+    stopOnError="false"
+    stopOnFailure="false"
+>
+    <testsuites>
+        <testsuite name="App">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+
+    <!-- Variables d'environnement pour les tests -->
+    <php>
+        <env name="CI_ENVIRONMENT" value="testing"/>
+        <env name="app.baseURL"    value="http://localhost:8080"/>
+        <!-- SQLite en mémoire : pas besoin de MySQL pour les tests -->
+        <env name="database.tests.DBDriver" value="SQLite3"/>
+        <env name="database.tests.database" value=":memory:"/>
+    </php>
+
+    <!-- Rapport de couverture de code -->
+    <coverage>
+        <include>
+            <directory suffix=".php">app/Controllers</directory>
+            <directory suffix=".php">app/Models</directory>
+        </include>
+        <report>
+            <clover outputFile="build/logs/clover.xml"/>
+            <html outputDirectory="build/coverage"/>
+            <text outputFile="php://stdout" showUncoveredFiles="false"/>
+        </report>
+    </coverage>
+</phpunit>

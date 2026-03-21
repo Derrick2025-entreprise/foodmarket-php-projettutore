@@ -1,0 +1,113 @@
+# ─────────────────────────────────────────────────────────────
+# ci.yml — Pipeline d'Intégration Continue (CI)
+#
+# Se déclenche sur :
+#   - Chaque push sur n'importe quelle branche
+#   - Chaque Pull Request vers main
+#
+# Jobs :
+#   1. lint    → Vérifie la syntaxe PHP
+#   2. test    → Lance les tests PHPUnit
+#   3. build   → Construit l'image Docker
+# ─────────────────────────────────────────────────────────────
+
+name: CI — FoodMarket PHP
+
+on:
+  push:
+    branches: ["**"]        # Tous les pushs sur toutes les branches
+  pull_request:
+    branches: [main]        # PRs vers main uniquement
+
+jobs:
+
+  # ── Job 1 : Lint PHP ───────────────────────────────────────
+  # Vérifie qu'il n'y a pas d'erreurs de syntaxe dans le code PHP
+  lint:
+    name: Lint PHP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installation de PHP 8.1
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          tools: composer
+
+      - name: Vérification syntaxe PHP (tous les fichiers)
+        run: |
+          find app/ -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
+          echo "✅ Lint PHP terminé"
+
+  # ── Job 2 : Tests PHPUnit ──────────────────────────────────
+  # Lance les tests unitaires avec SQLite en mémoire
+  # Pas besoin de MySQL grâce à la config database.tests
+  test:
+    name: Tests PHPUnit
+    runs-on: ubuntu-latest
+    needs: lint          # Ne lance les tests que si le lint passe
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installation de PHP 8.1 avec extensions
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.1"
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, mysqli
+          coverage: xdebug   # Pour le rapport de couverture
+
+      - name: Cache des dépendances Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+
+      - name: Installation des dépendances Composer
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Copie du fichier .env pour les tests
+        run: cp .env.example .env
+
+      - name: Lancement des tests PHPUnit avec couverture
+        run: composer test
+        env:
+          CI_ENVIRONMENT: testing
+
+      - name: Upload du rapport de couverture
+        uses: actions/upload-artifact@v4
+        if: always()    # Upload même si les tests échouent
+        with:
+          name: coverage-report
+          path: build/coverage/
+
+  # ── Job 3 : Build Docker ───────────────────────────────────
+  # Vérifie que l'image Docker se construit sans erreur
+  build:
+    name: Build Docker
+    runs-on: ubuntu-latest
+    needs: test          # Ne build que si les tests passent
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Configuration de Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build de l'image Docker (sans push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false        # On ne pousse pas encore (pas de tag)
+          tags: foodmarket-php:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Vérification que l'image est bien construite
+        run: docker images | grep foodmarket-php
