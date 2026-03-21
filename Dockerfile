@@ -1,21 +1,33 @@
 # ─────────────────────────────────────────────────────────────
 # Dockerfile — FoodMarket PHP (CodeIgniter 4)
-# Utilise webdevops/php-apache:8.1 qui inclut déjà :
-#   - PHP 8.1 + Apache
-#   - Extensions : intl, mbstring, mysqli, pdo_mysql, zip, etc.
-#   - Composer préinstallé
-# Avantage : aucun apt-get nécessaire → build sans accès réseau Debian
+# Image officielle PHP 8.1 + Apache
 # ─────────────────────────────────────────────────────────────
 
-FROM webdevops/php-apache:8.1
+FROM php:8.1-apache
+
+# Installation des extensions PHP nécessaires
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    libzip-dev \
+    zip \
+    unzip \
+    git \
+    && docker-php-ext-install intl mysqli pdo pdo_mysql zip \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Installation de Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Activer mod_rewrite pour CodeIgniter
+RUN a2enmod rewrite
 
 # Dossier de travail
-WORKDIR /app
+WORKDIR /var/www/html
 
 # Copie du code source
 COPY . .
 
-# Installation des dépendances Composer
+# Installation des dépendances Composer (prod uniquement)
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 
 # Créer les dossiers CI4 avec les bonnes permissions
@@ -26,7 +38,7 @@ RUN mkdir -p writable/cache writable/logs writable/session writable/uploads \
 # Copier .env si absent
 RUN cp -n .env.example .env || true
 
-# Variable d'environnement pour Apache — pointe vers public/
-ENV WEB_DOCUMENT_ROOT=/app/public
+# Configuration Apache — pointer vers public/
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 80
