@@ -56,7 +56,9 @@ jobs:
         run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Copie du fichier .env pour les tests
-        run: cp .env.example .env
+        run: |
+          cp .env.example .env
+          mkdir -p writable/cache writable/logs writable/session writable/uploads
 
       - name: Lancement des tests PHPUnit
         run: composer test
@@ -118,6 +120,7 @@ jobs:
       - name: Génération du rapport de couverture pour SonarQube
         run: |
           cp .env.example .env
+          mkdir -p writable/cache writable/logs writable/session writable/uploads
           vendor/bin/phpunit --coverage-clover build/coverage/clover.xml
         env:
           CI_ENVIRONMENT: testing
