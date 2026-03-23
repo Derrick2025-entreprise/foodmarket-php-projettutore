@@ -17,10 +17,10 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Installation de PHP 8.1
+      - name: Installation de PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.2"
           tools: composer
 
       - name: Vérification syntaxe PHP (tous les fichiers)
@@ -38,10 +38,10 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Installation de PHP 8.1 avec extensions
+      - name: Installation de PHP 8.2 avec extensions
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.2"
           extensions: intl, mbstring, sqlite3, pdo_sqlite, mysqli
           coverage: xdebug
 
@@ -105,10 +105,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Installation de PHP 8.1
+      - name: Installation de PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.2"
           extensions: intl, mbstring, sqlite3, pdo_sqlite
           coverage: xdebug
 
@@ -137,10 +137,10 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v4
 
-      - name: Installation de PHP 8.1
+      - name: Installation de PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.1"
+          php-version: "8.2"
           extensions: intl, mbstring, sqlite3, pdo_sqlite, mysqli
           tools: composer
 

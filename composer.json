@@ -3,7 +3,7 @@
     "description": "Projet e-commerce alimentaire - CodeIgniter 4",
     "type": "project",
     "require": {
-        "php": "^8.1",
+        "php": "^8.2",
         "codeigniter4/framework": "^4.4"
     },
     "require-dev": {
