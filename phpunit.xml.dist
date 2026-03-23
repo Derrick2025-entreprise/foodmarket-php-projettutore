@@ -21,9 +21,9 @@
     <php>
         <env name="CI_ENVIRONMENT" value="testing"/>
         <env name="app.baseURL"    value="http://localhost:8080"/>
-        <!-- SQLite fichier temporaire : pas besoin de MySQL pour les tests -->
+        <!-- SQLite fichier dans writable/ : pas besoin de MySQL pour les tests -->
         <env name="database.tests.DBDriver" value="SQLite3"/>
-        <env name="database.tests.database" value="/tmp/test_foodmarket.db"/>
+        <env name="database.tests.database" value="tests_db"/>
     </php>
 
     <!-- Rapport de couverture de code -->

@@ -34,7 +34,7 @@ class Database extends Config
         'hostname' => '',
         'username' => '',
         'password' => '',
-        'database' => '/tmp/test_foodmarket.db',
+        'database' => 'tests_db',
         'DBDriver' => 'SQLite3',
         'DBPrefix' => '',
         'port'     => 3306,

@@ -10,39 +10,16 @@ class ProductModelTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    protected $DBGroup   = 'tests';
-    protected $migrate   = false;
-    protected $refresh   = false;
-    protected $namespace = 'App';
+    protected $DBGroup            = 'tests';
+    protected $migrate            = true;
+    protected $refresh            = true;
+    protected $migrationNamespace = 'App';
 
     private ProductModel $model;
 
     protected function setUp(): void
     {
-        // Supprimer le fichier SQLite pour repartir d'un état propre
-        $dbFile = '/tmp/test_foodmarket.db';
-        if (file_exists($dbFile)) {
-            unlink($dbFile);
-        }
-
         parent::setUp();
-
-        $db = \Config\Database::connect('tests');
-        $db->query('DROP TABLE IF EXISTS products');
-        $db->query('
-            CREATE TABLE products (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                nom         VARCHAR(100) NOT NULL,
-                prix        DECIMAL(10,2) NOT NULL,
-                categorie   VARCHAR(50) NOT NULL,
-                stock       INT DEFAULT 0,
-                description TEXT,
-                image_url   VARCHAR(255),
-                created_at  DATETIME,
-                updated_at  DATETIME
-            )
-        ');
-
         $this->model = new ProductModel();
     }
 
