@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    phpunit.xml.dist — Configuration PHPUnit pour FoodMarket
-    - Utilise SQLite en mémoire pour les tests (pas besoin de MySQL)
-    - Génère un rapport de couverture de code
--->
 <phpunit
     bootstrap="vendor/codeigniter4/framework/system/Test/bootstrap.php"
     backupGlobals="false"
@@ -17,27 +12,29 @@
         </testsuite>
     </testsuites>
 
-    <!-- Variables d'environnement pour les tests -->
     <php>
-        <env name="CI_ENVIRONMENT"                value="testing"/>
-        <env name="app.baseURL"                   value="http://localhost:8080"/>
-        <env name="database.default.DBDriver"     value="SQLite3"/>
-        <env name="database.default.database"     value="writable/tests.db"/>
-        <env name="database.default.DBPrefix"     value=""/>
-        <env name="database.default.hostname"     value=""/>
-        <env name="database.default.username"     value=""/>
-        <env name="database.default.password"     value=""/>
-        <env name="database.default.port"         value=""/>
-        <env name="database.tests.DBDriver"       value="SQLite3"/>
-        <env name="database.tests.database"       value="writable/tests.db"/>
-        <env name="database.tests.DBPrefix"       value=""/>
-        <env name="database.tests.hostname"       value=""/>
-        <env name="database.tests.username"       value=""/>
-        <env name="database.tests.password"       value=""/>
-        <env name="database.tests.port"           value=""/>
+        <env name="CI_ENVIRONMENT"            value="testing"/>
+        <env name="app.baseURL"               value="http://localhost/"/>
+
+        <!-- Connexion default → SQLite fichier partagé (mode testing) -->
+        <env name="database.default.DBDriver" value="SQLite3"/>
+        <env name="database.default.database" value="writable/tests.db"/>
+        <env name="database.default.DBPrefix" value=""/>
+        <env name="database.default.hostname" value=""/>
+        <env name="database.default.username" value=""/>
+        <env name="database.default.password" value=""/>
+        <env name="database.default.port"     value=""/>
+
+        <!-- Connexion tests → même fichier SQLite -->
+        <env name="database.tests.DBDriver"   value="SQLite3"/>
+        <env name="database.tests.database"   value="writable/tests.db"/>
+        <env name="database.tests.DBPrefix"   value=""/>
+        <env name="database.tests.hostname"   value=""/>
+        <env name="database.tests.username"   value=""/>
+        <env name="database.tests.password"   value=""/>
+        <env name="database.tests.port"       value=""/>
     </php>
 
-    <!-- Rapport de couverture de code -->
     <coverage>
         <include>
             <directory suffix=".php">app/Controllers</directory>

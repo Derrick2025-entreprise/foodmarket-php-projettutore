@@ -5,27 +5,27 @@ namespace App\Controllers;
 use App\Models\ProductModel;
 use CodeIgniter\HTTP\ResponseInterface;
 
+/**
+ * ProductController — CRUD produits
+ *
+ * GET    /api/products          → Liste (filtre ?category_id=X)
+ * GET    /api/products/{id}     → Détail
+ * POST   /api/products          → Créer (admin)
+ * PUT    /api/products/{id}     → Modifier (admin)
+ * DELETE /api/products/{id}     → Supprimer (admin)
+ */
 class ProductController extends BaseController
 {
-    /**
-     * Liste tous les produits
-     * Supporte le filtre ?categorie=fruits via query string
-     */
     public function index(): ResponseInterface
     {
-        $model     = new ProductModel();
-        $categorie = $this->request->getGet('categorie');
+        $model      = new ProductModel();
+        $categoryId = $this->request->getGet('category_id');
 
-        $products = $categorie
-            ? $model->where('categorie', $categorie)->findAll()
-            : $model->findAll();
+        $products = $model->getWithCategory($categoryId ? (int) $categoryId : null);
 
         return $this->response->setJSON($products);
     }
 
-    /**
-     * Retourne un produit par son ID
-     */
     public function show(int $id): ResponseInterface
     {
         $model   = new ProductModel();
@@ -39,33 +39,20 @@ class ProductController extends BaseController
         return $this->response->setJSON($product);
     }
 
-    /**
-     * Crée un nouveau produit
-     */
     public function create(): ResponseInterface
     {
         $model = new ProductModel();
         $data  = $this->request->getJSON(true) ?? [];
 
-        if (empty($data['nom']) || !isset($data['prix']) || empty($data['categorie'])) {
+        if (!$model->insert($data)) {
             return $this->response->setStatusCode(400)
-                ->setJSON(['error' => 'nom, prix et categorie sont obligatoires']);
-        }
-
-        $id = $model->insert($data);
-
-        if ($id === false) {
-            return $this->response->setStatusCode(400)
-                ->setJSON(['error' => $model->errors()]);
+                ->setJSON(['errors' => $model->errors()]);
         }
 
         return $this->response->setStatusCode(201)
-            ->setJSON($model->find($id));
+            ->setJSON($model->find($model->getInsertID()));
     }
 
-    /**
-     * Met à jour un produit existant
-     */
     public function update(int $id): ResponseInterface
     {
         $model = new ProductModel();
@@ -81,9 +68,6 @@ class ProductController extends BaseController
         return $this->response->setJSON($model->find($id));
     }
 
-    /**
-     * Supprime un produit
-     */
     public function delete(int $id): ResponseInterface
     {
         $model = new ProductModel();
@@ -94,6 +78,7 @@ class ProductController extends BaseController
         }
 
         $model->delete($id);
-        return $this->response->setStatusCode(204);
+
+        return $this->response->setStatusCode(204)->setBody('');
     }
 }

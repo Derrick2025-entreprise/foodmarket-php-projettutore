@@ -2,16 +2,15 @@
 # docker-compose.yml — FoodMarket PHP
 #
 # Services :
-#   app        → Application CodeIgniter 4 (port 8080)
-#   db         → MySQL 8 (port 3306)
-#   phpmyadmin → Interface web MySQL (port 8081)
-#   prometheus → Collecte métriques (port 9090)
-#   grafana    → Dashboard métriques (port 3001)
+#   app           → CodeIgniter 4 (port 80)
+#   db            → MySQL 8 (port 3306)
+#   phpmyadmin    → Interface MySQL (port 8080)
+#   prometheus    → Métriques (port 9090)
+#   node-exporter → Métriques système (port 9100)
 #
 # Usage :
-#   docker-compose up -d          → Démarrer tout
-#   docker-compose down           → Arrêter tout
-#   docker-compose logs -f app    → Voir les logs de l'app
+#   docker-compose up -d
+#   docker-compose exec app php spark migrate
 # ─────────────────────────────────────────────────────────────
 
 services:
@@ -23,17 +22,17 @@ services:
       dockerfile: Dockerfile
     container_name: foodmarket-app
     ports:
-      - "8080:80"
+      - "80:80"
     environment:
       - CI_ENVIRONMENT=development
       - DB_HOSTNAME=db
       - DB_DATABASE=foodmarket
       - DB_USERNAME=fooduser
       - DB_PASSWORD=foodpass
+      - JWT_SECRET=foodmarket_secret_key_change_in_production
     volumes:
-      # Monte le code source en live (utile en développement)
       - .:/var/www/html
-      - /var/www/html/vendor   # Exclut vendor du montage
+      - /var/www/html/vendor
     depends_on:
       db:
         condition: service_healthy
@@ -54,7 +53,6 @@ services:
       MYSQL_PASSWORD: foodpass
     volumes:
       - db-data:/var/lib/mysql
-    # Healthcheck : attend que MySQL soit prêt avant de démarrer l'app
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fooduser", "-pfoodpass"]
       interval: 10s
@@ -64,12 +62,12 @@ services:
       - foodmarket-net
     restart: unless-stopped
 
-  # ── phpMyAdmin : interface web pour MySQL ───────────────────
+  # ── phpMyAdmin ──────────────────────────────────────────────
   phpmyadmin:
     image: phpmyadmin:latest
     container_name: foodmarket-phpmyadmin
     ports:
-      - "8081:80"
+      - "8080:80"
     environment:
       PMA_HOST: db
       PMA_USER: fooduser
@@ -80,7 +78,7 @@ services:
       - foodmarket-net
     restart: unless-stopped
 
-  # ── Prometheus : collecte des métriques ────────────────────
+  # ── Prometheus ──────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest
     container_name: foodmarket-prometheus
@@ -92,7 +90,7 @@ services:
       - foodmarket-net
     restart: unless-stopped
 
-  # ── Node Exporter : métriques CPU, RAM, réseau du host ─────
+  # ── Node Exporter ───────────────────────────────────────────
   node-exporter:
     image: prom/node-exporter:latest
     container_name: foodmarket-node-exporter
@@ -105,85 +103,7 @@ services:
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
-    networks:
-      - foodmarket-net
-    restart: unless-stopped
-
-  # ── Elasticsearch : stockage des logs ─────────────────────
-  elasticsearch:
-    image: elasticsearch:8.12.0
-    container_name: foodmarket-elasticsearch
-    ports:
-      - "9200:9200"
-    environment:
-      - discovery.type=single-node          # Mode nœud unique (pas de cluster)
-      - xpack.security.enabled=false        # Désactiver la sécurité pour le dev
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m     # Limiter la mémoire JVM à 512 Mo
-    volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
-    networks:
-      - foodmarket-net
-    restart: unless-stopped
-
-  # ── Logstash : traitement et parsing des logs ──────────────
-  logstash:
-    image: logstash:8.12.0
-    container_name: foodmarket-logstash
-    ports:
-      - "5044:5044"   # Port Beats (Filebeat → Logstash)
-      - "5000:5000"   # Port TCP (logs directs)
-      - "9600:9600"   # API HTTP Logstash
-    volumes:
-      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline
-      - ./elk/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml
-    depends_on:
-      - elasticsearch
-    networks:
-      - foodmarket-net
-    restart: unless-stopped
-
-  # ── Kibana : interface web pour visualiser les logs ────────
-  kibana:
-    image: kibana:8.12.0
-    container_name: foodmarket-kibana
-    ports:
-      - "5601:5601"
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-    depends_on:
-      - elasticsearch
-    networks:
-      - foodmarket-net
-    restart: unless-stopped
-
-  # ── Filebeat : collecte des logs de l'application ──────────
-  filebeat:
-    image: elastic/filebeat:8.12.0
-    container_name: foodmarket-filebeat
-    user: root    # Nécessaire pour lire les logs système
-    volumes:
-      - ./elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
-      - ./writable/logs:/var/www/html/writable/logs:ro
-    depends_on:
-      - logstash
-    networks:
-      - foodmarket-net
-    restart: unless-stopped
-
-  # ── Grafana : visualisation des métriques ──────────────────
-  grafana:
-    image: grafana/grafana:latest
-    container_name: foodmarket-grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-    volumes:
-      - grafana-data:/var/lib/grafana
-    depends_on:
-      - prometheus
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($|/)'
     networks:
       - foodmarket-net
     restart: unless-stopped
@@ -194,5 +114,3 @@ networks:
 
 volumes:
   db-data:
-  grafana-data:
-  elasticsearch-data:

@@ -1,11 +1,10 @@
 # ─────────────────────────────────────────────────────────────
-# prometheus.yml — Configuration Prometheus
-# Scrape les métriques de l'application toutes les 15 secondes
+# prometheus.yml — Configuration Prometheus FoodMarket
 # ─────────────────────────────────────────────────────────────
 
 global:
-  scrape_interval: 15s      # Fréquence de collecte des métriques
-  evaluation_interval: 15s  # Fréquence d'évaluation des règles d'alerte
+  scrape_interval:     15s
+  evaluation_interval: 15s
 
 scrape_configs:
 
@@ -14,14 +13,14 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
-  # Métriques de l'application FoodMarket
-  - job_name: 'foodmarket'
+  # Métriques applicatives FoodMarket
+  - job_name: 'foodmarket-app'
     static_configs:
       - targets: ['app:80']
     metrics_path: '/metrics'
     scrape_interval: 15s
 
-  # Métriques système (CPU, RAM, réseau) via node-exporter
+  # Métriques système (CPU, RAM, réseau)
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']

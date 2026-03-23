@@ -5,6 +5,10 @@ namespace Tests;
 use CodeIgniter\Test\CIUnitTestCase;
 use App\Models\ProductModel;
 
+/**
+ * Tests unitaires du ProductModel
+ * SQLite fichier partagé via defaultGroup='tests' en mode testing
+ */
 class ProductModelTest extends CIUnitTestCase
 {
     private ProductModel $model;
@@ -13,62 +17,87 @@ class ProductModelTest extends CIUnitTestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        self::$testDb = \Config\Database::connect('tests');
+
+        self::$testDb = \Config\Database::connect();
+
         self::$testDb->query('DROP TABLE IF EXISTS products');
+        self::$testDb->query('DROP TABLE IF EXISTS categories');
+        self::$testDb->query('
+            CREATE TABLE categories (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        VARCHAR(100) NOT NULL,
+                description TEXT,
+                image       VARCHAR(255)
+            )
+        ');
         self::$testDb->query('
             CREATE TABLE products (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                nom         VARCHAR(100) NOT NULL,
-                prix        DECIMAL(10,2) NOT NULL,
-                categorie   VARCHAR(50) NOT NULL,
-                stock       INT DEFAULT 0,
+                category_id INTEGER,
+                name        VARCHAR(100) NOT NULL,
                 description TEXT,
-                image_url   VARCHAR(255),
+                price       DECIMAL(10,2) NOT NULL,
+                stock       INT DEFAULT 0,
+                image       VARCHAR(255),
                 created_at  DATETIME,
                 updated_at  DATETIME
             )
         ');
+
+        self::$testDb->table('categories')->insert(['name' => 'Fruits']);
     }
 
     protected function setUp(): void
     {
         parent::setUp();
-        self::$testDb->query('DELETE FROM products');
+        // Recréer la table pour remettre l'AUTOINCREMENT à 1
+        self::$testDb->query('DROP TABLE IF EXISTS products');
+        self::$testDb->query('
+            CREATE TABLE products (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                category_id INTEGER,
+                name        VARCHAR(100) NOT NULL,
+                description TEXT,
+                price       DECIMAL(10,2) NOT NULL,
+                stock       INT DEFAULT 0,
+                image       VARCHAR(255),
+                created_at  DATETIME,
+                updated_at  DATETIME
+            )
+        ');
         $this->model = new ProductModel();
     }
 
     public function testInsertValidProduct(): void
     {
         $id = $this->model->insert([
-            'nom' => 'Bananes', 'prix' => 1.80, 'categorie' => 'fruits', 'stock' => 100,
+            'name' => 'Bananes', 'price' => 1.80, 'category_id' => 1, 'stock' => 100,
         ]);
         $this->assertNotFalse($id);
-        $this->assertEquals('Bananes', $this->model->find($id)['nom']);
+        $this->assertEquals('Bananes', $this->model->find($id)['name']);
     }
 
     public function testInsertFailsWithNegativePrice(): void
     {
         $result = $this->model->insert([
-            'nom' => 'Produit invalide', 'prix' => -5.00, 'categorie' => 'fruits',
+            'name' => 'Produit invalide', 'price' => -5.00, 'category_id' => 1,
         ]);
         $this->assertFalse($result);
         $this->assertNotEmpty($this->model->errors());
     }
 
-    public function testInsertFailsWithInvalidCategorie(): void
+    public function testInsertFailsWithoutName(): void
     {
-        $result = $this->model->insert([
-            'nom' => 'Produit invalide', 'prix' => 5.00, 'categorie' => 'electronique',
-        ]);
+        $result = $this->model->insert(['price' => 3.00, 'category_id' => 1]);
         $this->assertFalse($result);
-        $this->assertArrayHasKey('categorie', $this->model->errors());
+        $this->assertArrayHasKey('name', $this->model->errors());
     }
 
-    public function testInsertFailsWithoutNom(): void
+    public function testInsertFailsWithoutPrice(): void
     {
-        $result = $this->model->insert(['prix' => 3.00, 'categorie' => 'legumes']);
+        $result = $this->model->insert(['name' => 'Produit sans prix', 'category_id' => 1]);
         $this->assertFalse($result);
-        $this->assertArrayHasKey('nom', $this->model->errors());
+        $this->assertArrayHasKey('price', $this->model->errors());
     }
 
     public function testFindAllReturnsArray(): void

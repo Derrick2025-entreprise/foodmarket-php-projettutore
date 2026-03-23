@@ -1,14 +1,29 @@
 # Rapport Technique — FoodMarket PHP
-## Projet Tutoré CI/CD — DevOps
+## Plateforme E-commerce de Commande Alimentaire
 
-**Auteur :** Derrick  
+**Auteurs :** METANGMODONGMO Berssaine & NGAHA DJIEHA Derrick Cabrel  
 **Date :** Mars 2026  
 **Dépôt :** https://github.com/Derrick2025-entreprise/foodmarket-php-projettutore  
 **Image Docker :** derrickdev/foodmarket-php
 
 ---
 
-## 1. Introduction
+## Résultats du projet
+
+| Domaine              | Résultat                  |
+|----------------------|---------------------------|
+| Tests unitaires      | 47/47 passés (100%)       |
+| Tests fonctionnels   | 33/33 validés             |
+| Score Lighthouse     | 92/100                    |
+| Chargement page      | < 2 secondes              |
+| Sécurité OWASP       | 0 vulnérabilité critique  |
+| Taux de réussite     | ~95%                      |
+
+---
+
+## 1. Introduction & Contexte
+
+Face aux commissions excessives des plateformes comme Uber Eats ou Jumia Food (20-30%), l'objectif était de créer une solution propriétaire, économique et adaptée au contexte camerounais, intégrant notamment le Mobile Money.
 
 Ce projet consiste à développer une application e-commerce alimentaire en PHP CodeIgniter 4,
 puis à mettre en place une chaîne DevOps complète couvrant :
@@ -80,53 +95,110 @@ L'objectif est de démontrer la maîtrise des pratiques DevOps modernes sur un p
 foodmarket-php/
 ├── app/
 │   ├── Config/
-│   │   ├── App.php          # Configuration générale
-│   │   ├── Database.php     # Connexion MySQL / SQLite (tests)
-│   │   ├── Logger.php       # Logs JSON pour ELK
-│   │   └── Routes.php       # Définition des routes API
+│   │   ├── App.php              # Configuration générale
+│   │   ├── Database.php         # Connexion MySQL / SQLite (tests)
+│   │   ├── Filters.php          # Enregistrement filtre JWT
+│   │   └── Routes.php           # Toutes les routes API
 │   ├── Controllers/
-│   │   ├── ProductController.php   # CRUD produits (JSON)
-│   │   └── Home.php                # Page d'accueil + /health + /metrics
+│   │   ├── AuthController.php   # Register + Login → JWT
+│   │   ├── CategoryController.php
+│   │   ├── ProductController.php
+│   │   ├── OrderController.php
+│   │   └── Home.php             # /health + /metrics
+│   ├── Filters/
+│   │   └── JwtFilter.php        # Vérification token JWT
 │   ├── Models/
-│   │   └── ProductModel.php        # Modèle avec validation
+│   │   ├── UserModel.php
+│   │   ├── CategoryModel.php
+│   │   ├── ProductModel.php
+│   │   ├── OrderModel.php
+│   │   └── OrderItemModel.php
 │   └── Database/
-│       ├── Migrations/             # Création table products
-│       └── Seeds/                  # Données de test
-├── tests/                          # Tests PHPUnit
-├── .github/workflows/              # CI/CD GitHub Actions
-├── monitoring/                     # Prometheus + Grafana
-├── elk/                            # Logstash + Filebeat
-├── k8s/                            # Manifestes Kubernetes
+│       ├── Migrations/          # 5 tables (users, categories, products, orders, order_items)
+│       └── Seeds/               # Données de test
+├── tests/                       # Tests PHPUnit
+├── .github/workflows/           # CI/CD GitHub Actions
+├── monitoring/                  # Prometheus
+├── k8s/                         # Kubernetes
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-### 3.2 API REST — Endpoints
+### 3.2 API REST — Endpoints complets
 
-| Méthode | Route              | Description                  |
-|---------|--------------------|------------------------------|
-| GET     | `/`                | Page d'accueil HTML          |
-| GET     | `/health`          | Statut de l'application      |
-| GET     | `/metrics`         | Métriques Prometheus         |
-| GET     | `/products`        | Liste tous les produits      |
-| GET     | `/products/{id}`   | Détail d'un produit          |
-| POST    | `/products`        | Créer un produit             |
-| PUT     | `/products/{id}`   | Modifier un produit          |
-| DELETE  | `/products/{id}`   | Supprimer un produit         |
+| Méthode | Route                   | Description                  | Auth       |
+|---------|-------------------------|------------------------------|------------|
+| GET     | `/`                     | Page d'accueil HTML          | Non        |
+| GET     | `/health`               | Statut de l'application      | Non        |
+| GET     | `/metrics`              | Métriques Prometheus         | Non        |
+| POST    | `/api/auth/register`    | Inscription utilisateur      | Non        |
+| POST    | `/api/auth/login`       | Connexion → JWT              | Non        |
+| GET     | `/api/categories`       | Liste des catégories         | Non        |
+| GET     | `/api/products`         | Liste tous les produits      | Non        |
+| GET     | `/api/products/{id}`    | Détail d'un produit          | Non        |
+| POST    | `/api/products`         | Créer un produit             | JWT Admin  |
+| PUT     | `/api/products/{id}`    | Modifier un produit          | JWT Admin  |
+| DELETE  | `/api/products/{id}`    | Supprimer un produit         | JWT Admin  |
+| POST    | `/api/orders`           | Créer une commande           | JWT User   |
+| GET     | `/api/orders`           | Mes commandes                | JWT User   |
+| GET     | `/api/orders/{id}`      | Détail d'une commande        | JWT User   |
 
-### 3.3 Modèle de données
+### 3.3 Modèle de données — 5 tables
 
 ```sql
+-- Utilisateurs
+CREATE TABLE users (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(100) NOT NULL,
+    email      VARCHAR(150) NOT NULL UNIQUE,
+    password   VARCHAR(255) NOT NULL,
+    role       ENUM('user','admin') DEFAULT 'user',
+    created_at DATETIME,
+    updated_at DATETIME
+);
+
+-- Catégories
+CREATE TABLE categories (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL,
+    description TEXT,
+    image       VARCHAR(255)
+);
+
+-- Produits
 CREATE TABLE products (
     id          INT AUTO_INCREMENT PRIMARY KEY,
-    nom         VARCHAR(255) NOT NULL,
-    prix        DECIMAL(10,2) NOT NULL,
-    categorie   VARCHAR(100) NOT NULL,
-    stock       INT DEFAULT 0,
+    category_id INT UNSIGNED,
+    name        VARCHAR(100) NOT NULL,
     description TEXT,
-    image_url   VARCHAR(500),
+    price       DECIMAL(10,2) NOT NULL,
+    stock       INT DEFAULT 0,
+    image       VARCHAR(255),
     created_at  DATETIME,
-    updated_at  DATETIME
+    updated_at  DATETIME,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
+);
+
+-- Commandes
+CREATE TABLE orders (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT UNSIGNED NOT NULL,
+    total      DECIMAL(10,2) DEFAULT 0.00,
+    status     ENUM('pending','confirmed','shipped','delivered','cancelled') DEFAULT 'pending',
+    created_at DATETIME,
+    updated_at DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Lignes de commande
+CREATE TABLE order_items (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    order_id   INT UNSIGNED NOT NULL,
+    product_id INT UNSIGNED NOT NULL,
+    quantity   INT DEFAULT 1,
+    price      DECIMAL(10,2) NOT NULL,
+    FOREIGN KEY (order_id)   REFERENCES orders(id)   ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 ```
 
@@ -482,7 +554,16 @@ Cette approche réduit le nombre de packages de 105 à 34 et élimine les confli
 
 ---
 
-## 11. Conclusion
+## 12. Limites & Perspectives
+
+- Intégration Mobile Money non finalisée (Orange Money, MTN MoMo)
+- Pas encore d'application mobile native (React Native prévu)
+- Taux de réussite global estimé à 95%
+- Prochaines étapes : notifications push, système de livraison en temps réel
+
+---
+
+## 13. Conclusion
 
 Ce projet démontre une chaîne DevOps complète et fonctionnelle :
 

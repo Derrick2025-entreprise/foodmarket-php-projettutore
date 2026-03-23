@@ -2,12 +2,12 @@
 
 namespace Tests;
 
-use CodeIgniter\Test\CIUnitTestCase;
+use PHPUnit\Framework\TestCase;
 
 /**
  * Tests généraux sur le produit
  */
-class ProductTest extends CIUnitTestCase
+class ProductTest extends TestCase
 {
     public function testPlaceholder(): void
     {

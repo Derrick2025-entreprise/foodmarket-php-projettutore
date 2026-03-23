@@ -39,4 +39,21 @@ class Database extends Config
         'DBPrefix' => '',
         'port'     => 3306,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // En mode testing : tout pointe vers SQLite, chemin absolu via WRITEPATH
+        if (ENVIRONMENT === 'testing') {
+            $this->defaultGroup       = 'tests';
+            $this->tests['database']  = WRITEPATH . 'tests.db';
+            $this->default['DBDriver'] = 'SQLite3';
+            $this->default['database'] = WRITEPATH . 'tests.db';
+            $this->default['hostname'] = '';
+            $this->default['username'] = '';
+            $this->default['password'] = '';
+            $this->default['port']     = 3306;
+        }
+    }
 }

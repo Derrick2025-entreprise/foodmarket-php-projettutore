@@ -5,6 +5,10 @@ namespace Tests;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\FeatureTestTrait;
 
+/**
+ * Tests fonctionnels du ProductController
+ * SQLite fichier partagé via defaultGroup='tests' en mode testing
+ */
 class ProductControllerTest extends CIUnitTestCase
 {
     use FeatureTestTrait;
@@ -14,115 +18,157 @@ class ProductControllerTest extends CIUnitTestCase
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        self::$testDb = \Config\Database::connect('tests');
+
+        // Supprimer le fichier SQLite de test s'il existe (repartir propre)
+        $dbFile = WRITEPATH . 'tests.db';
+        if (file_exists($dbFile)) {
+            unlink($dbFile);
+        }
+
+        self::$testDb = \Config\Database::connect();
+
         self::$testDb->query('DROP TABLE IF EXISTS products');
+        self::$testDb->query('DROP TABLE IF EXISTS categories');
+        self::$testDb->query('
+            CREATE TABLE categories (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                name        VARCHAR(100) NOT NULL,
+                description TEXT,
+                image       VARCHAR(255)
+            )
+        ');
         self::$testDb->query('
             CREATE TABLE products (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                nom         VARCHAR(100) NOT NULL,
-                prix        DECIMAL(10,2) NOT NULL,
-                categorie   VARCHAR(50) NOT NULL,
-                stock       INT DEFAULT 0,
+                category_id INTEGER,
+                name        VARCHAR(100) NOT NULL,
                 description TEXT,
-                image_url   VARCHAR(255),
+                price       DECIMAL(10,2) NOT NULL,
+                stock       INT DEFAULT 0,
+                image       VARCHAR(255),
                 created_at  DATETIME,
                 updated_at  DATETIME
             )
         ');
+
+        self::$testDb->table('categories')->insert(['name' => 'Fruits']);
     }
 
     protected function setUp(): void
     {
         parent::setUp();
-        self::$testDb->query('DELETE FROM products');
+        // Recréer la table pour remettre l'AUTOINCREMENT à 1
+        self::$testDb->query('DROP TABLE IF EXISTS products');
+        self::$testDb->query('
+            CREATE TABLE products (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                category_id INTEGER,
+                name        VARCHAR(100) NOT NULL,
+                description TEXT,
+                price       DECIMAL(10,2) NOT NULL,
+                stock       INT DEFAULT 0,
+                image       VARCHAR(255),
+                created_at  DATETIME,
+                updated_at  DATETIME
+            )
+        ');
         self::$testDb->table('products')->insertBatch([
-            ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100],
-            ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200],
-            ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30],
-            ['nom' => 'Saumon frais',   'prix' => 18.50, 'categorie' => 'poissons', 'stock' => 20],
-            ['nom' => "Jus d'orange",   'prix' => 3.00,  'categorie' => 'boissons', 'stock' => 150],
+            ['name' => 'Pommes Bio',     'price' => 2.50,  'category_id' => 1, 'stock' => 100],
+            ['name' => 'Carottes',       'price' => 1.20,  'category_id' => 1, 'stock' => 200],
+            ['name' => 'Poulet fermier', 'price' => 12.00, 'category_id' => 1, 'stock' => 30],
+            ['name' => 'Saumon frais',   'price' => 18.50, 'category_id' => 1, 'stock' => 20],
+            ['name' => "Jus d'orange",   'price' => 3.00,  'category_id' => 1, 'stock' => 150],
         ]);
+    }
+
+    // Helper : parse le JSON depuis la réponse CI4
+    private function json(\CodeIgniter\Test\TestResponse $result): ?array
+    {
+        $body = $result->response()->getBody();
+        return json_decode($body, true);
     }
 
     public function testGetAllProductsReturns200(): void
     {
-        $result = $this->get('products');
+        $result = $this->get('api/products');
         $result->assertStatus(200);
-        $body = json_decode($result->getBody(), true);
+        $body = $this->json($result);
         $this->assertIsArray($body);
         $this->assertNotEmpty($body);
     }
 
-    public function testGetProductsFilterByCategorie(): void
+    public function testGetProductsFilterByCategoryId(): void
     {
-        $result = $this->get('products?categorie=fruits');
+        $result = $this->get('api/products?category_id=1');
         $result->assertStatus(200);
-        $body = json_decode($result->getBody(), true);
+        $body = $this->json($result);
+        $this->assertIsArray($body);
         foreach ($body as $product) {
-            $this->assertEquals('fruits', $product['categorie']);
+            $this->assertEquals(1, $product['category_id']);
         }
     }
 
     public function testGetProductByIdReturns200(): void
     {
-        $result = $this->get('products/1');
+        $result = $this->get('api/products/1');
         $result->assertStatus(200);
-        $body = json_decode($result->getBody(), true);
+        $body = $this->json($result);
         $this->assertEquals(1, $body['id']);
     }
 
     public function testGetProductByIdReturns404WhenNotFound(): void
     {
-        $result = $this->get('products/9999');
+        $result = $this->get('api/products/9999');
         $result->assertStatus(404);
-        $body = json_decode($result->getBody(), true);
+        $body = $this->json($result);
+        $this->assertIsArray($body);
         $this->assertArrayHasKey('error', $body);
     }
 
     public function testCreateProductReturns201(): void
     {
-        $result = $this->withBodyFormat('json')->post('products', [
-            'nom' => 'Mangues', 'prix' => 4.50, 'categorie' => 'fruits', 'stock' => 50,
+        $result = $this->withBodyFormat('json')->post('api/products', [
+            'name' => 'Mangues', 'price' => 4.50, 'category_id' => 1, 'stock' => 50,
         ]);
         $result->assertStatus(201);
-        $body = json_decode($result->getBody(), true);
-        $this->assertEquals('Mangues', $body['nom']);
+        $body = $this->json($result);
+        $this->assertEquals('Mangues', $body['name']);
         $this->assertArrayHasKey('id', $body);
     }
 
     public function testCreateProductReturns400WhenMissingFields(): void
     {
-        $result = $this->withBodyFormat('json')->post('products', ['nom' => 'Incomplet']);
+        $result = $this->withBodyFormat('json')->post('api/products', ['name' => 'Incomplet']);
         $result->assertStatus(400);
-        $body = json_decode($result->getBody(), true);
+        $body = $this->json($result);
         $this->assertIsArray($body);
-        $this->assertArrayHasKey('error', $body);
+        $this->assertArrayHasKey('errors', $body);
     }
 
     public function testUpdateProductReturns200(): void
     {
-        $result = $this->withBodyFormat('json')->put('products/1', ['prix' => 9.99]);
+        $result = $this->withBodyFormat('json')->put('api/products/1', ['price' => 9.99]);
         $result->assertStatus(200);
-        $body = json_decode($result->getBody(), true);
-        $this->assertEquals('9.99', $body['prix']);
+        $body = $this->json($result);
+        $this->assertEquals('9.99', $body['price']);
     }
 
     public function testUpdateProductReturns404WhenNotFound(): void
     {
-        $result = $this->withBodyFormat('json')->put('products/9999', ['prix' => 1.00]);
+        $result = $this->withBodyFormat('json')->put('api/products/9999', ['price' => 1.00]);
         $result->assertStatus(404);
     }
 
     public function testDeleteProductReturns204(): void
     {
-        $result = $this->delete('products/1');
+        $result = $this->delete('api/products/1');
         $result->assertStatus(204);
-        $this->get('products/1')->assertStatus(404);
+        $this->get('api/products/1')->assertStatus(404);
     }
 
     public function testDeleteProductReturns404WhenNotFound(): void
     {
-        $result = $this->delete('products/9999');
+        $result = $this->delete('api/products/9999');
         $result->assertStatus(404);
     }
 
@@ -130,7 +176,7 @@ class ProductControllerTest extends CIUnitTestCase
     {
         $result = $this->get('health');
         $result->assertStatus(200);
-        $body = json_decode($result->getBody(), true);
+        $body = $this->json($result);
         $this->assertIsArray($body);
         $this->assertEquals('ok', $body['status']);
     }
