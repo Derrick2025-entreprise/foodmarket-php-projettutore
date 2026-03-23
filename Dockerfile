@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────
 # Dockerfile — FoodMarket PHP (CodeIgniter 4)
-# Image officielle PHP 8.1 + Apache
+# Image officielle PHP 8.2 + Apache
 # ─────────────────────────────────────────────────────────────
 
 FROM php:8.2-apache
@@ -28,7 +28,7 @@ WORKDIR /var/www/html
 COPY . .
 
 # Installation des dépendances Composer (prod uniquement, sans scripts post-install)
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-reqs
 
 # Créer les dossiers CI4 avec les bonnes permissions
 RUN mkdir -p writable/cache writable/logs writable/session writable/uploads \
