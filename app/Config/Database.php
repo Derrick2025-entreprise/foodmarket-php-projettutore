@@ -36,7 +36,7 @@ class Database extends Config
         'password' => '',
         'database' => ':memory:',
         'DBDriver' => 'SQLite3',
-        'DBPrefix' => 'db_',
+        'DBPrefix' => '',
         'port'     => 3306,
     ];
 
