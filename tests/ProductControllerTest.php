@@ -11,19 +11,15 @@ class ProductControllerTest extends CIUnitTestCase
     use DatabaseTestTrait;
     use FeatureTestTrait;
 
-    protected $DBGroup   = 'tests';
-    protected $migrate   = false;
-    protected $refresh   = false;
-    protected $namespace = 'App';
+    protected $DBGroup = 'tests';
+    protected $migrate = false;
+    protected $refresh = false;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Forcer la connexion tests comme connexion par défaut
-        \Config\Database::connect('tests');
-
-        $db = db_connect('tests');
+        $db = \Config\Database::connect('tests');
         $db->query('DROP TABLE IF EXISTS products');
         $db->query('
             CREATE TABLE products (
@@ -40,11 +36,11 @@ class ProductControllerTest extends CIUnitTestCase
         ');
 
         $db->table('products')->insertBatch([
-            ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100, 'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
-            ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200, 'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
-            ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30,  'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
-            ['nom' => 'Saumon frais',   'prix' => 18.50, 'categorie' => 'poissons', 'stock' => 20,  'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
-            ['nom' => "Jus d'orange",   'prix' => 3.00,  'categorie' => 'boissons', 'stock' => 150, 'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
+            ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100],
+            ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200],
+            ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30],
+            ['nom' => 'Saumon frais',   'prix' => 18.50, 'categorie' => 'poissons', 'stock' => 20],
+            ['nom' => "Jus d'orange",   'prix' => 3.00,  'categorie' => 'boissons', 'stock' => 150],
         ]);
     }
 

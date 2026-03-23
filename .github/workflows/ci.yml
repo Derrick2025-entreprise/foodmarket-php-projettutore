@@ -62,8 +62,12 @@ jobs:
         run: |
           cp .env.example .env
           sed -i 's/CI_ENVIRONMENT = development/CI_ENVIRONMENT = testing/' .env
-          echo "database.default.DBDriver = SQLite3" >> .env
+          echo "database.default.DBDriver = SQLite3"  >> .env
           echo "database.default.database = :memory:" >> .env
+          echo "database.default.DBPrefix = "         >> .env
+          echo "database.default.hostname = "         >> .env
+          echo "database.default.username = "         >> .env
+          echo "database.default.password = "         >> .env
           mkdir -p writable/cache writable/logs writable/session writable/uploads
 
       - name: Lancement des tests PHPUnit
