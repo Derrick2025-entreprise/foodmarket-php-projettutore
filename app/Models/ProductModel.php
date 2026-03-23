@@ -18,6 +18,9 @@ class ProductModel extends Model
     // Clé primaire
     protected $primaryKey = 'id';
 
+    // Groupe de base de données — utilise 'tests' en environnement de test
+    protected $DBGroup = 'default';
+
     // Retourne des tableaux associatifs (plus simple pour l'API JSON)
     protected $returnType = 'array';
 

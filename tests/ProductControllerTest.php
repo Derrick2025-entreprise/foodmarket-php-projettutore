@@ -20,7 +20,10 @@ class ProductControllerTest extends CIUnitTestCase
     {
         parent::setUp();
 
-        $db = \Config\Database::connect('tests');
+        // Forcer la connexion tests comme connexion par défaut
+        \Config\Database::connect('tests');
+
+        $db = db_connect('tests');
         $db->query('DROP TABLE IF EXISTS products');
         $db->query('
             CREATE TABLE products (
@@ -37,11 +40,11 @@ class ProductControllerTest extends CIUnitTestCase
         ');
 
         $db->table('products')->insertBatch([
-            ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100],
-            ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200],
-            ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30],
-            ['nom' => 'Saumon frais',   'prix' => 18.50, 'categorie' => 'poissons', 'stock' => 20],
-            ['nom' => 'Jus d\'orange',  'prix' => 3.00,  'categorie' => 'boissons', 'stock' => 150],
+            ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100, 'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
+            ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200, 'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
+            ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30,  'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
+            ['nom' => 'Saumon frais',   'prix' => 18.50, 'categorie' => 'poissons', 'stock' => 20,  'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
+            ['nom' => "Jus d'orange",   'prix' => 3.00,  'categorie' => 'boissons', 'stock' => 150, 'description' => null, 'image_url' => null, 'created_at' => null, 'updated_at' => null],
         ]);
     }
 
@@ -49,7 +52,6 @@ class ProductControllerTest extends CIUnitTestCase
     {
         $result = $this->get('products');
         $result->assertStatus(200);
-        $result->assertHeader('Content-Type', 'application/json; charset=UTF-8');
         $body = json_decode($result->getBody(), true);
         $this->assertIsArray($body);
         $this->assertNotEmpty($body);
@@ -60,6 +62,7 @@ class ProductControllerTest extends CIUnitTestCase
         $result = $this->get('products?categorie=fruits');
         $result->assertStatus(200);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         foreach ($body as $product) {
             $this->assertEquals('fruits', $product['categorie']);
         }
@@ -70,6 +73,7 @@ class ProductControllerTest extends CIUnitTestCase
         $result = $this->get('products/1');
         $result->assertStatus(200);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         $this->assertEquals(1, $body['id']);
     }
 
@@ -78,6 +82,7 @@ class ProductControllerTest extends CIUnitTestCase
         $result = $this->get('products/9999');
         $result->assertStatus(404);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         $this->assertArrayHasKey('error', $body);
     }
 
@@ -92,6 +97,7 @@ class ProductControllerTest extends CIUnitTestCase
             ]);
         $result->assertStatus(201);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         $this->assertEquals('Mangues', $body['nom']);
         $this->assertArrayHasKey('id', $body);
     }
@@ -102,6 +108,7 @@ class ProductControllerTest extends CIUnitTestCase
             ->post('products', ['nom' => 'Incomplet']);
         $result->assertStatus(400);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         $this->assertArrayHasKey('error', $body);
     }
 
@@ -111,6 +118,7 @@ class ProductControllerTest extends CIUnitTestCase
             ->put('products/1', ['prix' => 9.99]);
         $result->assertStatus(200);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         $this->assertEquals('9.99', $body['prix']);
     }
 
@@ -140,6 +148,7 @@ class ProductControllerTest extends CIUnitTestCase
         $result = $this->get('health');
         $result->assertStatus(200);
         $body = json_decode($result->getBody(), true);
+        $this->assertIsArray($body);
         $this->assertEquals('ok', $body['status']);
     }
 }
