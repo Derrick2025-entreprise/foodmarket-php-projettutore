@@ -53,12 +53,12 @@ jobs:
           restore-keys: composer-
 
       - name: Installation des dépendances Composer
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Copie du fichier .env pour les tests
         run: cp .env.example .env
 
-      - name: Lancement des tests PHPUnit avec couverture
+      - name: Lancement des tests PHPUnit
         run: composer test
         env:
           CI_ENVIRONMENT: testing
@@ -93,7 +93,6 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ── Job 4 : Analyse SonarQube ──────────────────────────────
-  # Ignoré si SONAR_TOKEN n'est pas configuré
   sonarqube:
     name: Analyse SonarQube
     runs-on: ubuntu-latest
@@ -101,7 +100,7 @@ jobs:
     if: ${{ vars.SONAR_ENABLED == 'true' }}
 
     steps:
-      - name: Checkout du code (historique complet pour SonarQube)
+      - name: Checkout du code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -114,7 +113,7 @@ jobs:
           coverage: xdebug
 
       - name: Installation des dépendances
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Génération du rapport de couverture pour SonarQube
         run: |
@@ -142,10 +141,11 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: "8.1"
+          extensions: intl, mbstring, sqlite3, pdo_sqlite, mysqli
           tools: composer
 
       - name: Installation des dépendances
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Audit des vulnérabilités Composer
         run: composer audit --no-dev || true
