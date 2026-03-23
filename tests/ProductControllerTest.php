@@ -9,14 +9,14 @@ class ProductControllerTest extends CIUnitTestCase
 {
     use FeatureTestTrait;
 
-    private static $db;
+    private static $testDb;
 
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        self::$db = \Config\Database::connect('tests');
-        self::$db->query('DROP TABLE IF EXISTS products');
-        self::$db->query('
+        self::$testDb = \Config\Database::connect('tests');
+        self::$testDb->query('DROP TABLE IF EXISTS products');
+        self::$testDb->query('
             CREATE TABLE products (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 nom         VARCHAR(100) NOT NULL,
@@ -34,8 +34,8 @@ class ProductControllerTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        self::$db->query('DELETE FROM products');
-        self::$db->table('products')->insertBatch([
+        self::$testDb->query('DELETE FROM products');
+        self::$testDb->table('products')->insertBatch([
             ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100],
             ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200],
             ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30],

@@ -8,14 +8,14 @@ use App\Models\ProductModel;
 class ProductModelTest extends CIUnitTestCase
 {
     private ProductModel $model;
-    private static $db;
+    private static $testDb;
 
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
-        self::$db = \Config\Database::connect('tests');
-        self::$db->query('DROP TABLE IF EXISTS products');
-        self::$db->query('
+        self::$testDb = \Config\Database::connect('tests');
+        self::$testDb->query('DROP TABLE IF EXISTS products');
+        self::$testDb->query('
             CREATE TABLE products (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 nom         VARCHAR(100) NOT NULL,
@@ -33,7 +33,7 @@ class ProductModelTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        self::$db->query('DELETE FROM products');
+        self::$testDb->query('DELETE FROM products');
         $this->model = new ProductModel();
     }
 
