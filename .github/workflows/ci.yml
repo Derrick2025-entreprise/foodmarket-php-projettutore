@@ -55,6 +55,9 @@ jobs:
       - name: Installation des dépendances Composer
         run: composer install --no-interaction --prefer-dist --no-scripts
 
+      - name: Régénération de l'autoloader
+        run: composer dump-autoload --optimize
+
       - name: Copie du fichier .env pour les tests
         run: |
           cp .env.example .env

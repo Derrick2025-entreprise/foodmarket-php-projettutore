@@ -19,7 +19,7 @@ class ProductModelTest extends CIUnitTestCase
     protected $DBGroup            = 'tests';
     protected $migrate            = true;
     protected $refresh            = true;
-    protected $migrationNamespace = 'App';
+    protected $namespace          = 'App';
 
     private ProductModel $model;
 
