@@ -20,7 +20,7 @@ class ProductModelTest extends CIUnitTestCase
     protected function setUp(): void
     {
         // Supprimer le fichier SQLite pour repartir d'un état propre
-        $dbFile = WRITEPATH . 'tests.db';
+        $dbFile = '/tmp/test_foodmarket.db';
         if (file_exists($dbFile)) {
             unlink($dbFile);
         }
