@@ -1,48 +1,22 @@
 <?php
 
-/**
- * @file App.php
- * @description Configuration principale de l'application CodeIgniter 4
- */
-
 namespace Config;
 
 use CodeIgniter\Config\BaseConfig;
 
 class App extends BaseConfig
 {
-    // URL de base — sera surchargée par la variable d'environnement app.baseURL
-    public string $baseURL = 'http://localhost:8080/';
-
-    // Index file (vide car on utilise Apache avec mod_rewrite)
-    public string $indexPage = '';
-
-    // Charset par défaut
-    public string $charset = 'UTF-8';
-
-    // Langue par défaut
-    public string $defaultLocale = 'fr';
-
-    // Fuseau horaire
-    public string $appTimezone = 'Africa/Douala';
-
-    // Clé de chiffrement (à définir dans .env)
-    public string $encryptionKey = '';
-
-    // Session
-    public string $sessionDriver            = 'CodeIgniter\Session\Handlers\FileHandler';
-    public string $sessionCookieName        = 'ci_session';
-    public int    $sessionExpiration        = 7200;
-    public string $sessionSavePath         = WRITEPATH . 'session';
-    public bool   $sessionMatchIP           = false;
-    public int    $sessionTimeToUpdate      = 300;
-    public bool   $sessionRegenerateDestroy = false;
-
-    // Cookie
-    public string $cookiePrefix   = '';
-    public string $cookieDomain   = '';
-    public string $cookiePath     = '/';
-    public bool   $cookieSecure   = false;
-    public bool   $cookieHTTPOnly = false;
-    public bool   $cookieSameSite = false;
+    public string $baseURL      = 'http://localhost:8080/';
+    public array  $allowedHostnames = [];
+    public string $indexPage    = '';
+    public string $uriProtocol  = 'REQUEST_URI';
+    public string $permittedURIChars = 'a-z 0-9~%.:_\-';
+    public string $defaultLocale     = 'fr';
+    public bool   $negotiateLocale   = false;
+    public array  $supportedLocales  = ['fr', 'en'];
+    public string $appTimezone  = 'Africa/Douala';
+    public string $charset      = 'UTF-8';
+    public bool   $forceGlobalSecureRequests = false;
+    public array  $proxyIPs     = [];
+    public bool   $CSPEnabled   = false;
 }
