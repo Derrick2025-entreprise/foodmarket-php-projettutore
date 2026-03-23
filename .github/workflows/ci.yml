@@ -60,10 +60,10 @@ jobs:
 
       - name: Copie du fichier .env pour les tests
         run: |
-          cp .env.testing .env
+          cp .env.example .env
           mkdir -p writable/cache writable/logs writable/session writable/uploads
-          touch writable/tests_db
-          chmod 777 writable/tests_db
+          touch writable/tests.db
+          chmod 777 writable/tests.db
 
       - name: Lancement des tests PHPUnit
         run: composer test

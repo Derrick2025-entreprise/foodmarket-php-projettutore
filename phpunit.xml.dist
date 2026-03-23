@@ -19,11 +19,22 @@
 
     <!-- Variables d'environnement pour les tests -->
     <php>
-        <env name="CI_ENVIRONMENT" value="testing"/>
-        <env name="app.baseURL"    value="http://localhost:8080"/>
-        <!-- SQLite fichier dans writable/ : pas besoin de MySQL pour les tests -->
-        <env name="database.tests.DBDriver" value="SQLite3"/>
-        <env name="database.tests.database" value="tests_db"/>
+        <env name="CI_ENVIRONMENT"                value="testing"/>
+        <env name="app.baseURL"                   value="http://localhost:8080"/>
+        <env name="database.default.DBDriver"     value="SQLite3"/>
+        <env name="database.default.database"     value="writable/tests.db"/>
+        <env name="database.default.DBPrefix"     value=""/>
+        <env name="database.default.hostname"     value=""/>
+        <env name="database.default.username"     value=""/>
+        <env name="database.default.password"     value=""/>
+        <env name="database.default.port"         value=""/>
+        <env name="database.tests.DBDriver"       value="SQLite3"/>
+        <env name="database.tests.database"       value="writable/tests.db"/>
+        <env name="database.tests.DBPrefix"       value=""/>
+        <env name="database.tests.hostname"       value=""/>
+        <env name="database.tests.username"       value=""/>
+        <env name="database.tests.password"       value=""/>
+        <env name="database.tests.port"           value=""/>
     </php>
 
     <!-- Rapport de couverture de code -->

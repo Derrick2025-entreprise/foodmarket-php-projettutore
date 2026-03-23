@@ -34,7 +34,7 @@ class Database extends Config
         'hostname' => '',
         'username' => '',
         'password' => '',
-        'database' => 'tests_db',
+        'database' => 'writable/tests.db',
         'DBDriver' => 'SQLite3',
         'DBPrefix' => '',
         'port'     => 3306,
