@@ -17,6 +17,12 @@ class ProductControllerTest extends CIUnitTestCase
 
     protected function setUp(): void
     {
+        // Supprimer le fichier SQLite pour repartir d'un état propre
+        $dbFile = WRITEPATH . 'tests.db';
+        if (file_exists($dbFile)) {
+            unlink($dbFile);
+        }
+
         parent::setUp();
 
         $db = \Config\Database::connect('tests');

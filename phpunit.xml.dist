@@ -23,7 +23,7 @@
         <env name="app.baseURL"    value="http://localhost:8080"/>
         <!-- SQLite en mémoire : pas besoin de MySQL pour les tests -->
         <env name="database.tests.DBDriver" value="SQLite3"/>
-        <env name="database.tests.database" value=":memory:"/>
+        <env name="database.tests.database" value="writable/tests.db"/>
     </php>
 
     <!-- Rapport de couverture de code -->

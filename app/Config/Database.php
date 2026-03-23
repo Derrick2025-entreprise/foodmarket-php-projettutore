@@ -31,22 +31,12 @@ class Database extends Config
 
     public array $tests = [
         'DSN'      => '',
-        'hostname' => '127.0.0.1',
+        'hostname' => '',
         'username' => '',
         'password' => '',
-        'database' => ':memory:',
+        'database' => 'writable/tests.db',
         'DBDriver' => 'SQLite3',
         'DBPrefix' => '',
         'port'     => 3306,
     ];
-
-    public function __construct()
-    {
-        parent::__construct();
-
-        // Bascule automatiquement sur SQLite en mode test
-        if (ENVIRONMENT === 'testing') {
-            $this->defaultGroup = 'tests';
-        }
-    }
 }
