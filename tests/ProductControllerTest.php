@@ -5,7 +5,6 @@ namespace Tests;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
-use App\Database\Seeds\ProductSeeder;
 
 class ProductControllerTest extends CIUnitTestCase
 {
@@ -15,8 +14,8 @@ class ProductControllerTest extends CIUnitTestCase
     protected $DBGroup   = 'tests';
     protected $migrate   = false;
     protected $refresh   = false;
+    protected $seed      = null;
     protected $namespace = 'App';
-    protected $seed      = ProductSeeder::class;
 
     protected function setUp(): void
     {
@@ -37,6 +36,14 @@ class ProductControllerTest extends CIUnitTestCase
                 updated_at  DATETIME
             )
         ');
+
+        $db->table('products')->insertBatch([
+            ['nom' => 'Pommes Bio',     'prix' => 2.50,  'categorie' => 'fruits',   'stock' => 100],
+            ['nom' => 'Carottes',       'prix' => 1.20,  'categorie' => 'legumes',  'stock' => 200],
+            ['nom' => 'Poulet fermier', 'prix' => 12.00, 'categorie' => 'viandes',  'stock' => 30],
+            ['nom' => 'Saumon frais',   'prix' => 18.50, 'categorie' => 'poissons', 'stock' => 20],
+            ['nom' => 'Jus d\'orange',  'prix' => 3.00,  'categorie' => 'boissons', 'stock' => 150],
+        ]);
     }
 
     public function testGetAllProductsReturns200(): void
