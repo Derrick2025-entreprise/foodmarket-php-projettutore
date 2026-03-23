@@ -14,7 +14,6 @@ class ProductControllerTest extends CIUnitTestCase
     protected $DBGroup   = 'tests';
     protected $migrate   = false;
     protected $refresh   = false;
-    protected $seed      = null;
     protected $namespace = 'App';
 
     protected function setUp(): void
