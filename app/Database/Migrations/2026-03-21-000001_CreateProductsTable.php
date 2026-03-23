@@ -30,8 +30,8 @@ class CreateProductsTable extends Migration
                 'constraint' => '10,2',
             ],
             'categorie' => [
-                'type'       => 'ENUM',
-                'constraint' => ['fruits', 'legumes', 'viandes', 'poissons', 'boissons', 'autres'],
+                'type'       => 'VARCHAR',
+                'constraint' => 50,
             ],
             'stock' => [
                 'type'    => 'INT',
