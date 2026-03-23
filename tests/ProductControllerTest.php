@@ -28,9 +28,8 @@ class ProductControllerTest extends CIUnitTestCase
 
     // Utilise la connexion "tests" (SQLite en mémoire)
     protected $DBGroup = 'tests';
-
-    // Exécute les migrations avant les tests
     protected $migrate = true;
+    protected $refresh = true;
 
     // Charge des données de test avant chaque test
     protected $seed = ProductSeeder::class;
