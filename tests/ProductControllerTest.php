@@ -27,9 +27,10 @@ class ProductControllerTest extends CIUnitTestCase
     use FeatureTestTrait;
 
     // Utilise la connexion "tests" (SQLite en mémoire)
-    protected $DBGroup = 'tests';
-    protected $migrate = true;
-    protected $refresh = true;
+    protected $DBGroup            = 'tests';
+    protected $migrate            = true;
+    protected $refresh            = true;
+    protected $migrationNamespace = 'App';
 
     // Charge des données de test avant chaque test
     protected $seed = ProductSeeder::class;

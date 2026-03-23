@@ -16,9 +16,10 @@ class ProductModelTest extends CIUnitTestCase
 {
     use DatabaseTestTrait;
 
-    protected $DBGroup = 'tests';
-    protected $migrate = true;
-    protected $refresh = true;
+    protected $DBGroup            = 'tests';
+    protected $migrate            = true;
+    protected $refresh            = true;
+    protected $migrationNamespace = 'App';
 
     private ProductModel $model;
 
