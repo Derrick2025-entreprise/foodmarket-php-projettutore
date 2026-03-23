@@ -1,21 +1,16 @@
 <?php
 
-/**
- * @file Database.php
- * @description Configuration de la base de données
- * Les valeurs sont surchargées par les variables d'environnement dans .env
- */
-
 namespace Config;
 
 use CodeIgniter\Database\Config;
 
 class Database extends Config
 {
-    // Base de données par défaut (utilisée en dev et prod)
+    public string $defaultGroup = 'default';
+
     public array $default = [
         'DSN'          => '',
-        'hostname'     => 'db',           // nom du service Docker
+        'hostname'     => 'db',
         'username'     => 'fooduser',
         'password'     => 'foodpass',
         'database'     => 'foodmarket',
@@ -34,7 +29,6 @@ class Database extends Config
         'numberNative' => false,
     ];
 
-    // Base de données de test (SQLite en mémoire — pas besoin de MySQL pour les tests)
     public array $tests = [
         'DSN'      => '',
         'hostname' => '127.0.0.1',
@@ -45,4 +39,14 @@ class Database extends Config
         'DBPrefix' => 'db_',
         'port'     => 3306,
     ];
+
+    public function __construct()
+    {
+        parent::__construct();
+
+        // Bascule automatiquement sur SQLite en mode test
+        if (ENVIRONMENT === 'testing') {
+            $this->defaultGroup = 'tests';
+        }
+    }
 }
