@@ -8,14 +8,14 @@ on:
 jobs:
 
   # ── Build & Push Docker Hub ─────────────────────────────────
-  push-image:
+  build:
     name: Build & Push Docker Hub
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Connexion à Docker Hub
+      - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -23,72 +23,77 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Métadonnées de l'image
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ secrets.DOCKER_USERNAME }}/foodmarket-php
-          tags: |
-            type=sha
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=semver,pattern={{version}}
-
-      - name: Build et push
+      - name: Build & Push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:latest
+            ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:sha-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Déploiement Staging (désactivé — pas de serveur configuré) ──
-  # Pour activer : retirer le "if: false" et configurer STAGING_HOST,
-  # STAGING_USER, STAGING_SSH_KEY dans les secrets GitHub
+  # ── Déploiement Staging ─────────────────────────────────────
+  # Skippé automatiquement si STAGING_HOST n'est pas défini
   deploy-staging:
     name: Déploiement Staging
     runs-on: ubuntu-latest
-    needs: push-image
-    if: false
+    needs: build
+    if: ${{ vars.STAGING_ENABLED == 'true' }}
 
     steps:
-      - name: Déploiement staging via SSH
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.STAGING_HOST }}
           username: ${{ secrets.STAGING_USER }}
           key: ${{ secrets.STAGING_SSH_KEY }}
           script: |
-            cd /opt/foodmarket
-            docker pull ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:latest
-            docker-compose up -d --no-build
-            docker-compose exec -T app php spark migrate --force
-            echo "✅ Staging déployé"
+            mkdir -p /opt/foodmarket && cd /opt/foodmarket
 
-  # ── Déploiement Production (désactivé — pas de serveur configuré) ──
-  # Pour activer : retirer le "if: false" et configurer PROD_HOST,
-  # PROD_USER, PROD_SSH_KEY dans les secrets GitHub
-  deploy-production:
-    name: Déploiement Production
-    runs-on: ubuntu-latest
-    needs: push-image
-    if: false
+            cat > docker-compose.yml << 'EOF'
+            version: '3.8'
+            services:
+              app:
+                image: ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:latest
+                container_name: foodmarket-app
+                ports:
+                  - "8080:80"
+                environment:
+                  CI_ENVIRONMENT: production
+                  database.default.hostname: db
+                  database.default.database: foodmarket
+                  database.default.username: fooduser
+                  database.default.password: foodpass
+                  database.default.DBDriver: MySQLi
+                depends_on:
+                  - db
+                networks:
+                  - foodmarket-network
+                restart: unless-stopped
+              db:
+                image: mysql:8.0
+                container_name: foodmarket-db
+                environment:
+                  MYSQL_ROOT_PASSWORD: rootpass
+                  MYSQL_DATABASE: foodmarket
+                  MYSQL_USER: fooduser
+                  MYSQL_PASSWORD: foodpass
+                volumes:
+                  - db_data:/var/lib/mysql
+                networks:
+                  - foodmarket-network
+                restart: unless-stopped
+            volumes:
+              db_data:
+            networks:
+              foodmarket-network:
+                driver: bridge
+            EOF
 
-    environment:
-      name: production
-      url: https://foodmarket.example.com
-
-    steps:
-      - name: Déploiement production via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.PROD_USER }}
-          key: ${{ secrets.PROD_SSH_KEY }}
-          script: |
-            cd /opt/foodmarket
-            docker pull ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:${{ github.ref_name }}
-            IMAGE_TAG=${{ github.ref_name }} docker-compose up -d --no-build
-            docker-compose exec -T app php spark migrate --force
-            echo "✅ Production ${{ github.ref_name }} déployée"
+            docker compose pull
+            docker compose up -d --remove-orphans
+            echo "✅ Déploiement staging terminé"
