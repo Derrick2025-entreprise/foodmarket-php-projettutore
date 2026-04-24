@@ -1,0 +1,120 @@
+# ─────────────────────────────────────────────────────────────
+# grafana-alerting.yml — Configuration des alertes Grafana
+#
+# Définit les règles d'alerte pour surveiller l'application.
+# À importer dans Grafana : Alerting → Import
+#
+# Alertes configurées :
+#   1. Mémoire PHP > 50 Mo → WARNING
+#   2. App inaccessible (pas de métriques) → CRITICAL
+# ─────────────────────────────────────────────────────────────
+
+apiVersion: 1
+
+# ── Canaux de notification ────────────────────────────────────
+contactPoints:
+  - orgId: 1
+    name: email-alert
+    receivers:
+      - uid: email-receiver
+        type: email
+        settings:
+          # Remplacer par l'email réel de l'équipe
+          addresses: "devops-team@foodmarket.com"
+          subject: "[FoodMarket] Alerte : {{ .GroupLabels.alertname }}"
+
+# ── Politiques de routage des alertes ────────────────────────
+policies:
+  - orgId: 1
+    receiver: email-alert
+    group_by: ["alertname"]
+    group_wait: 30s       # Attendre 30s avant d'envoyer
+    group_interval: 5m    # Regrouper les alertes sur 5 min
+    repeat_interval: 1h   # Répéter l'alerte toutes les heures
+
+# ── Règles d'alerte ──────────────────────────────────────────
+groups:
+  - orgId: 1
+    name: foodmarket-alerts
+    folder: FoodMarket
+    interval: 1m    # Évaluer les règles toutes les minutes
+    rules:
+
+      # Alerte 1 : Mémoire PHP trop élevée
+      - uid: memory-warning
+        title: "Mémoire PHP élevée"
+        condition: C
+        data:
+          - refId: A
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: app_memory_bytes
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            queryType: ""
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: "-100"
+            model:
+              conditions:
+                - evaluator:
+                    params: [50000000]   # 50 Mo
+                    type: gt             # greater than
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              type: classic_conditions
+        noDataState: NoData
+        execErrState: Error
+        for: 2m    # Déclencher seulement si > 50Mo pendant 2 min
+        annotations:
+          summary: "Mémoire PHP dépasse 50 Mo"
+          description: "La mémoire utilisée est {{ $values.A }} bytes"
+        labels:
+          severity: warning
+
+      # Alerte 2 : Application inaccessible
+      - uid: app-down
+        title: "Application FoodMarket inaccessible"
+        condition: C
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              expr: up{job="foodmarket"}
+              intervalMs: 1000
+              maxDataPoints: 43200
+          - refId: C
+            datasourceUid: "-100"
+            model:
+              conditions:
+                - evaluator:
+                    params: [1]
+                    type: lt    # less than 1 = app down
+                  operator:
+                    type: and
+                  query:
+                    params: [A]
+                  reducer:
+                    type: last
+              type: classic_conditions
+        noDataState: Alerting
+        execErrState: Alerting
+        for: 1m
+        annotations:
+          summary: "FoodMarket est inaccessible"
+          description: "L'application ne répond plus depuis 1 minute"
+        labels:
+          severity: critical

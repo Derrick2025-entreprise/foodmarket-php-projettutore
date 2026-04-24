@@ -1,0 +1,116 @@
+# ─────────────────────────────────────────────────────────────
+# docker-compose.yml — FoodMarket PHP
+#
+# Services :
+#   app           → CodeIgniter 4 (port 80)
+#   db            → MySQL 8 (port 3306)
+#   phpmyadmin    → Interface MySQL (port 8080)
+#   prometheus    → Métriques (port 9090)
+#   node-exporter → Métriques système (port 9100)
+#
+# Usage :
+#   docker-compose up -d
+#   docker-compose exec app php spark migrate
+# ─────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Application PHP CodeIgniter 4 ──────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: foodmarket-app
+    ports:
+      - "80:80"
+    environment:
+      - CI_ENVIRONMENT=development
+      - DB_HOSTNAME=db
+      - DB_DATABASE=foodmarket
+      - DB_USERNAME=fooduser
+      - DB_PASSWORD=foodpass
+      - JWT_SECRET=foodmarket_secret_key_change_in_production
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Base de données MySQL 8 ─────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: foodmarket-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: foodmarket
+      MYSQL_USER: fooduser
+      MYSQL_PASSWORD: foodpass
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "fooduser", "-pfoodpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── phpMyAdmin ──────────────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: foodmarket-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: fooduser
+      PMA_PASSWORD: foodpass
+    depends_on:
+      - db
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Prometheus ──────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: foodmarket-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+  # ── Node Exporter ───────────────────────────────────────────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: foodmarket-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($|/)'
+    networks:
+      - foodmarket-net
+    restart: unless-stopped
+
+networks:
+  foodmarket-net:
+    driver: bridge
+
+volumes:
+  db-data:

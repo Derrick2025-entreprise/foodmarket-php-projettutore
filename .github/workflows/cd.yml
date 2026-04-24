@@ -1,0 +1,99 @@
+name: CD — FoodMarket PHP
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+jobs:
+
+  # ── Build & Push Docker Hub ─────────────────────────────────
+  build:
+    name: Build & Push Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & Push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:latest
+            ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ── Déploiement Staging ─────────────────────────────────────
+  # Skippé automatiquement si STAGING_HOST n'est pas défini
+  deploy-staging:
+    name: Déploiement Staging
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ vars.STAGING_ENABLED == 'true' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script: |
+            mkdir -p /opt/foodmarket && cd /opt/foodmarket
+
+            cat > docker-compose.yml << 'EOF'
+            version: '3.8'
+            services:
+              app:
+                image: ${{ secrets.DOCKER_USERNAME }}/foodmarket-php:latest
+                container_name: foodmarket-app
+                ports:
+                  - "8080:80"
+                environment:
+                  CI_ENVIRONMENT: production
+                  database.default.hostname: db
+                  database.default.database: foodmarket
+                  database.default.username: fooduser
+                  database.default.password: foodpass
+                  database.default.DBDriver: MySQLi
+                depends_on:
+                  - db
+                networks:
+                  - foodmarket-network
+                restart: unless-stopped
+              db:
+                image: mysql:8.0
+                container_name: foodmarket-db
+                environment:
+                  MYSQL_ROOT_PASSWORD: rootpass
+                  MYSQL_DATABASE: foodmarket
+                  MYSQL_USER: fooduser
+                  MYSQL_PASSWORD: foodpass
+                volumes:
+                  - db_data:/var/lib/mysql
+                networks:
+                  - foodmarket-network
+                restart: unless-stopped
+            volumes:
+              db_data:
+            networks:
+              foodmarket-network:
+                driver: bridge
+            EOF
+
+            docker compose pull
+            docker compose up -d --remove-orphans
+            echo "✅ Déploiement staging terminé"

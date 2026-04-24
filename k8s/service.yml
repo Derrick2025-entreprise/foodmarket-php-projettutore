@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────
+# k8s/service.yml — Services Kubernetes FoodMarket
+#
+# Expose l'application et la base de données dans le cluster
+#
+# Usage :
+#   kubectl apply -f k8s/service.yml
+# ─────────────────────────────────────────────────────────────
+
+# ── Service principal : expose l'app vers l'extérieur ────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: foodmarket-service
+  labels:
+    app: foodmarket
+spec:
+  # LoadBalancer : expose l'app sur une IP publique (cloud)
+  # Utiliser NodePort si pas de cloud provider
+  type: LoadBalancer
+  selector:
+    app: foodmarket
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80        # Port externe
+      targetPort: 80  # Port du container
+
+---
+
+# ── Service base de données : accès interne uniquement ───────
+apiVersion: v1
+kind: Service
+metadata:
+  name: foodmarket-db-service
+  labels:
+    app: foodmarket-db
+spec:
+  # ClusterIP : accessible uniquement depuis l'intérieur du cluster
+  type: ClusterIP
+  selector:
+    app: foodmarket-db
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
