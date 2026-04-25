@@ -1,0 +1,11 @@
+# Redirige les requêtes vers le dossier public et désactive l'affichage des index
+Options -Indexes
+DirectoryIndex public/index.php index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Redirige tout vers public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ /public/$1 [L]
+</IfModule>

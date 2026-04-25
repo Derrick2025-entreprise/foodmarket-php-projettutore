@@ -1,0 +1,48 @@
+name: Deploy 02switch
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Déploiement automatique 02switch
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Vérifier les secrets requis
+        run: |
+          if [ -z "${{ secrets.FTP_PASSWORD }}" ] || [ -z "${{ secrets.FTP_SERVER_DIR }}" ]; then
+            echo "❌ Erreur : FTP_PASSWORD ou FTP_SERVER_DIR manquant"
+            exit 1
+          fi
+          echo "✅ Secrets disponibles"
+
+      - name: Déployer sur 02switch via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4
+        with:
+          server: ftp.cdiu8226.odns.fr
+          username: cdiu8226@ngaha.cdwfs.net
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          passive: true
+          local-dir: .
+          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          exclude:
+            - .github
+            - tests
+            - .git
+            - .vscode
+            - docker-compose.yml
+            - Dockerfile
+            - README.md
+            - RAPPORT_TECHNIQUE.md
+            - phpunit.xml.dist
+            - sonar-project.properties
+
+      - name: Notification de succès
+        run: echo "✅ Déploiement FTP terminé"
