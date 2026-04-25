@@ -15,11 +15,14 @@ jobs:
 
       - name: Vérifier les secrets requis
         run: |
-          if [ -z "${{ secrets.FTP_PASSWORD }}" ] || [ -z "${{ secrets.FTP_SERVER_DIR }}" ]; then
+          if [ -z "$FTP_PASSWORD" ] || [ -z "$FTP_SERVER_DIR" ]; then
             echo "❌ Erreur : FTP_PASSWORD ou FTP_SERVER_DIR manquant"
             exit 1
           fi
           echo "✅ Secrets disponibles"
+        env:
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SERVER_DIR: ${{ secrets.FTP_SERVER_DIR }}
 
       - name: Déployer sur 02switch via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4
